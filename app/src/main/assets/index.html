@@ -71,12 +71,18 @@ body.playing #viz i { animation: bar .7s ease-in-out infinite alternate; }
 #viz i:nth-child(4) { animation-delay: .1s !important; } #viz i:nth-child(5) { animation-delay: .25s !important; }
 @keyframes bar { from { height: 3px; } to { height: 18px; } }
 
+svg.i { display: block; fill: currentColor; width: 24px; height: 24px; }
+.ctl.small svg.i { width: 20px; height: 20px; }
+#play svg.i { width: 22px; height: 22px; margin: auto; }
+.heart svg.i { width: 22px; height: 22px; }
+#nav .ic svg.i { margin: 0 auto 2px; }
 #nav { display: flex; background: var(--bg); border-top: 1px solid var(--bg3); padding-bottom: env(safe-area-inset-bottom); }
 #nav button { flex: 1; background: none; border: 0; color: var(--sub); padding: 10px 0 8px; font-size: 11px; }
 #nav button span { display: block; font-size: 20px; }
 #nav button.on { color: var(--accent); }
 </style>
 <style id="user-css"></style>
+<style id="native-css"></style>
 </head>
 <body>
 <div id="app">
@@ -86,23 +92,23 @@ body.playing #viz i { animation: bar .7s ease-in-out infinite alternate; }
       <div class="art" id="pl-art"></div>
       <div class="meta"><div class="tt" id="pl-title">Belum ada lagu</div><div class="ar" id="pl-artist">Pilih lagu untuk diputar</div></div>
       <div id="viz"><i></i><i></i><i></i><i></i><i></i></div>
-      <button class="ctl" id="prev">&#9198;</button>
-      <button class="ctl" id="play">&#9654;</button>
-      <button class="ctl" id="next">&#9197;</button>
+      <button class="ctl" id="prev" data-ic="skip-previous"></button>
+      <button class="ctl" id="play" data-ic="play"></button>
+      <button class="ctl" id="next" data-ic="skip-next"></button>
     </div>
     <div id="seekrow">
       <span id="cur">0:00</span>
       <input type="range" id="seek" min="0" max="1000" value="0">
       <span id="dur">0:00</span>
-      <button class="ctl small" id="shuf">&#8644;</button>
-      <button class="ctl small" id="rep">&#8635;</button>
+      <button class="ctl small" id="shuf" data-ic="shuffle-variant"></button>
+      <button class="ctl small" id="rep" data-ic="repeat"></button>
     </div>
   </div>
   <div id="nav">
-    <button data-tab="home" class="on"><span>&#8962;</span>Beranda</button>
-    <button data-tab="search"><span>&#9906;</span>Cari</button>
-    <button data-tab="lib"><span>&#9829;</span>Koleksi</button>
-    <button data-tab="set"><span>&#9881;</span>Tema</button>
+    <button data-tab="home" class="on"><span class="ic" data-ic="home"></span>Beranda</button>
+    <button data-tab="search"><span class="ic" data-ic="magnify"></span>Cari</button>
+    <button data-tab="lib"><span class="ic" data-ic="heart"></span>Koleksi</button>
+    <button data-tab="set"><span class="ic" data-ic="cog"></span>Tema</button>
   </div>
 </div>
 
@@ -112,6 +118,12 @@ body.playing #viz i { animation: bar .7s ease-in-out infinite alternate; }
   var APP = 'SpicyMusic';
   var HOSTS = ['https://api.audius.co', 'https://discoveryprovider.audius.co', 'https://discoveryprovider2.audius.co'];
   var base = HOSTS[0];
+
+  // Ikon: Material Design Icons (@mdi/svg, Apache-2.0)
+  var ICONS = {"skip-previous": "M6,18V6H8V18H6M9.5,12L18,6V18L9.5,12Z", "play": "M8,5.14V19.14L19,12.14L8,5.14Z", "pause": "M14,19H18V5H14M6,19H10V5H6V19Z", "skip-next": "M16,18H18V6H16M6,18L14.5,12L6,6V18Z", "shuffle-variant": "M17,3L22.25,7.5L17,12L22.25,16.5L17,21V18H14.26L11.44,15.18L13.56,13.06L15.5,15H17V12L17,9H15.5L6.5,18H2V15H5.26L14.26,6H17V3M2,6H6.5L9.32,8.82L7.2,10.94L5.26,9H2V6Z", "repeat": "M17,17H7V14L3,18L7,22V19H19V13H17M7,7H17V10L21,6L17,2V5H5V11H7V7Z", "repeat-once": "M13,15V9H12L10,10V11H11.5V15M17,17H7V14L3,18L7,22V19H19V13H17M7,7H17V10L21,6L17,2V5H5V11H7V7Z", "home": "M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z", "magnify": "M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z", "heart": "M12,21.35L10.55,20.03C5.4,15.36 2,12.27 2,8.5C2,5.41 4.42,3 7.5,3C9.24,3 10.91,3.81 12,5.08C13.09,3.81 14.76,3 16.5,3C19.58,3 22,5.41 22,8.5C22,12.27 18.6,15.36 13.45,20.03L12,21.35Z", "heart-outline": "M12.1,18.55L12,18.65L11.89,18.55C7.14,14.24 4,11.39 4,8.5C4,6.5 5.5,5 7.5,5C9.04,5 10.54,6 11.07,7.36H12.93C13.46,6 14.96,5 16.5,5C18.5,5 20,6.5 20,8.5C20,11.39 16.86,14.24 12.1,18.55M16.5,3C14.76,3 13.09,3.81 12,5.08C10.91,3.81 9.24,3 7.5,3C4.42,3 2,5.41 2,8.5C2,12.27 5.4,15.36 10.55,20.03L12,21.35L13.45,20.03C18.6,15.36 22,12.27 22,8.5C22,5.41 19.58,3 16.5,3Z", "cog": "M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.67 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z"};
+  function ic(n) { return '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="' + ICONS[n] + '"/></svg>'; }
+  function setIcon(node, n) { node.innerHTML = ic(n); }
+  (function () { var ns = document.querySelectorAll('[data-ic]'); for (var q = 0; q < ns.length; q++) setIcon(ns[q], ns[q].getAttribute('data-ic')); })();
 
   // ---------- storage ----------
   function load(k, d) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
@@ -219,8 +231,8 @@ body.playing #viz i { animation: bar .7s ease-in-out infinite alternate; }
     for (var i = 0; i < rows.length; i++) rows[i].classList.toggle('now', !!cur && rows[i].getAttribute('data-id') === cur.id);
   }
 
-  audio.addEventListener('play', function () { document.body.classList.add('playing'); $('play').innerHTML = '&#10074;&#10074;'; });
-  audio.addEventListener('pause', function () { document.body.classList.remove('playing'); $('play').innerHTML = '&#9654;'; });
+  audio.addEventListener('play', function () { document.body.classList.add('playing'); setIcon($('play'), 'pause'); });
+  audio.addEventListener('pause', function () { document.body.classList.remove('playing'); setIcon($('play'), 'play'); });
   audio.addEventListener('ended', function () { next(true); });
   audio.addEventListener('error', function () { if (queue.length > 1) next(false); });
   audio.addEventListener('timeupdate', function () {
@@ -240,7 +252,7 @@ body.playing #viz i { animation: bar .7s ease-in-out infinite alternate; }
   function syncToggles() {
     $('shuf').classList.toggle('on', !!S.shuffle);
     $('rep').classList.toggle('on', !!S.repeat);
-    $('rep').innerHTML = S.repeat === 'one' ? '&#8635;1' : '&#8635;';
+    setIcon($('rep'), S.repeat === 'one' ? 'repeat-once' : 'repeat');
   }
   if ('mediaSession' in navigator) {
     try {
@@ -258,12 +270,12 @@ body.playing #viz i { animation: bar .7s ease-in-out infinite alternate; }
     var m = el('div', 'meta');
     m.appendChild(el('div', 'tt', t.title || '-'));
     m.appendChild(el('div', 'ar', ((t.user && t.user.name) || '') + (t.duration ? '  ·  ' + fmt(t.duration) : '')));
-    var h = el('button', 'heart' + (isLiked(t) ? ' on' : ''), isLiked(t) ? '♥' : '♡');
+    var h = el('button', 'heart' + (isLiked(t) ? ' on' : '')); setIcon(h, isLiked(t) ? 'heart' : 'heart-outline');
     h.onclick = function (ev) {
       ev.stopPropagation();
       if (isLiked(t)) liked = liked.filter(function (x) { return x.id !== t.id; }); else liked.unshift(t);
       save('liked', liked);
-      var on = isLiked(t); h.className = 'heart' + (on ? ' on' : ''); h.textContent = on ? '♥' : '♡';
+      var on = isLiked(t); h.className = 'heart' + (on ? ' on' : ''); setIcon(h, on ? 'heart' : 'heart-outline');
     };
     r.appendChild(a); r.appendChild(m); r.appendChild(h);
     r.onclick = function () { playQueue(list, idx); };
@@ -392,6 +404,15 @@ body.playing #viz i { animation: bar .7s ease-in-out infinite alternate; }
   for (var k = 0; k < nb.length; k++) nb[k].onclick = function () { show(this.getAttribute('data-tab')); };
 
   window.spicyBack = function () { if (tab !== 'home') { show('home'); return true; } return false; };
+
+  // Dipanggil dari tombol Tema native (MainActivity)
+  window.spicySetTheme = function (name, css) {
+    if (THEMES[name]) { S.theme = name; S.accent = ''; save('settings', S); }
+    var n = document.getElementById('native-css');
+    if (n) n.textContent = css || '';
+    applyTheme();
+    if (tab === 'set') viewSettings();
+  };
 
   applyTheme(); syncToggles(); show('home');
 })();
