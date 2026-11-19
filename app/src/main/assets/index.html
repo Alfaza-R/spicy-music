@@ -39,20 +39,26 @@ h2 { font-size: 15px; margin: 18px 0 8px; color: var(--sub); text-transform: upp
   color: var(--text); font-size: 15px; outline: none; }
 .empty, .status { color: var(--sub); text-align: center; padding: 28px 10px; font-size: 14px; }
 .card { background: var(--bg2); border-radius: 12px; padding: 12px; margin-bottom: 10px; }
-.card label { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; font-size: 15px; }
-.card small { display: block; color: var(--sub); font-size: 12px; }
+.card label { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 0; font-size: 15px; }
+.card small { display: block; color: var(--sub); font-size: 12px; word-break: break-word; }
 select, textarea, input[type=color] { background: var(--bg3); color: var(--text); border: 0; border-radius: 8px; padding: 8px; font-size: 14px; }
 textarea { width: 100%; min-height: 120px; font-family: monospace; font-size: 12px; }
-button.btn { background: var(--accent); color: #000; border: 0; border-radius: 20px; padding: 9px 18px; font-weight: 600; font-size: 14px; margin-top: 8px; }
+pre { margin: 6px 0 0; font-size: 11px; color: var(--sub); white-space: pre-wrap; word-break: break-word; }
+button.btn { background: var(--accent); color: #000; border: 0; border-radius: 20px; padding: 9px 18px; font-weight: 600; font-size: 14px; margin: 8px 8px 0 0; }
+button.btn.alt { background: var(--bg3); color: var(--text); }
+.card .search { margin-top: 4px; }
 .sw { width: 18px; height: 18px; border-radius: 50%; display: inline-block; vertical-align: middle; margin-right: 4px; }
 .themes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .theme { border: 2px solid transparent; border-radius: 12px; padding: 10px; background: var(--bg2); color: var(--text); text-align: left; font-size: 14px; }
 .theme.on { border-color: var(--accent); }
-input[type=checkbox].tg { width: 44px; height: 24px; appearance: none; -webkit-appearance: none; background: var(--bg3);
+input[type=checkbox].tg { flex: none; width: 44px; height: 24px; appearance: none; -webkit-appearance: none; background: var(--bg3);
   border-radius: 12px; position: relative; outline: none; }
 input[type=checkbox].tg::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--sub); transition: .15s; }
 input[type=checkbox].tg:checked { background: var(--accent); }
 input[type=checkbox].tg:checked::after { left: 23px; background: #000; }
+
+#toast { display: none; position: fixed; left: 16px; right: 16px; bottom: 150px; background: var(--bg3); color: var(--text);
+  padding: 12px 16px; border-radius: 12px; font-size: 13px; text-align: center; z-index: 10; box-shadow: 0 4px 16px #0008; }
 
 #player { background: var(--bg2); padding: 8px 12px 6px; border-top: 1px solid var(--bg3); }
 #pl-top { display: flex; align-items: center; gap: 10px; }
@@ -82,7 +88,7 @@ svg.i { display: block; fill: currentColor; width: 24px; height: 24px; }
 #nav button.on { color: var(--accent); }
 </style>
 <style id="user-css"></style>
-<style id="native-css"></style>
+<style id="plugin-css"></style>
 </head>
 <body>
 <div id="app">
@@ -108,9 +114,11 @@ svg.i { display: block; fill: currentColor; width: 24px; height: 24px; }
     <button data-tab="home" class="on"><span class="ic" data-ic="home"></span>Beranda</button>
     <button data-tab="search"><span class="ic" data-ic="magnify"></span>Cari</button>
     <button data-tab="lib"><span class="ic" data-ic="heart"></span>Koleksi</button>
+    <button data-tab="plug"><span class="ic" data-ic="puzzle"></span>Plugin</button>
     <button data-tab="set"><span class="ic" data-ic="cog"></span>Tema</button>
   </div>
 </div>
+<div id="toast"></div>
 
 <script>
 (function () {
@@ -120,7 +128,7 @@ svg.i { display: block; fill: currentColor; width: 24px; height: 24px; }
   var base = HOSTS[0];
 
   // Ikon: Material Design Icons (@mdi/svg, Apache-2.0)
-  var ICONS = {"skip-previous": "M6,18V6H8V18H6M9.5,12L18,6V18L9.5,12Z", "play": "M8,5.14V19.14L19,12.14L8,5.14Z", "pause": "M14,19H18V5H14M6,19H10V5H6V19Z", "skip-next": "M16,18H18V6H16M6,18L14.5,12L6,6V18Z", "shuffle-variant": "M17,3L22.25,7.5L17,12L22.25,16.5L17,21V18H14.26L11.44,15.18L13.56,13.06L15.5,15H17V12L17,9H15.5L6.5,18H2V15H5.26L14.26,6H17V3M2,6H6.5L9.32,8.82L7.2,10.94L5.26,9H2V6Z", "repeat": "M17,17H7V14L3,18L7,22V19H19V13H17M7,7H17V10L21,6L17,2V5H5V11H7V7Z", "repeat-once": "M13,15V9H12L10,10V11H11.5V15M17,17H7V14L3,18L7,22V19H19V13H17M7,7H17V10L21,6L17,2V5H5V11H7V7Z", "home": "M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z", "magnify": "M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z", "heart": "M12,21.35L10.55,20.03C5.4,15.36 2,12.27 2,8.5C2,5.41 4.42,3 7.5,3C9.24,3 10.91,3.81 12,5.08C13.09,3.81 14.76,3 16.5,3C19.58,3 22,5.41 22,8.5C22,12.27 18.6,15.36 13.45,20.03L12,21.35Z", "heart-outline": "M12.1,18.55L12,18.65L11.89,18.55C7.14,14.24 4,11.39 4,8.5C4,6.5 5.5,5 7.5,5C9.04,5 10.54,6 11.07,7.36H12.93C13.46,6 14.96,5 16.5,5C18.5,5 20,6.5 20,8.5C20,11.39 16.86,14.24 12.1,18.55M16.5,3C14.76,3 13.09,3.81 12,5.08C10.91,3.81 9.24,3 7.5,3C4.42,3 2,5.41 2,8.5C2,12.27 5.4,15.36 10.55,20.03L12,21.35L13.45,20.03C18.6,15.36 22,12.27 22,8.5C22,5.41 19.58,3 16.5,3Z", "cog": "M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.67 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z"};
+  var ICONS = {"skip-previous": "M6,18V6H8V18H6M9.5,12L18,6V18L9.5,12Z", "play": "M8,5.14V19.14L19,12.14L8,5.14Z", "pause": "M14,19H18V5H14M6,19H10V5H6V19Z", "skip-next": "M16,18H18V6H16M6,18L14.5,12L6,6V18Z", "shuffle-variant": "M17,3L22.25,7.5L17,12L22.25,16.5L17,21V18H14.26L11.44,15.18L13.56,13.06L15.5,15H17V12L17,9H15.5L6.5,18H2V15H5.26L14.26,6H17V3M2,6H6.5L9.32,8.82L7.2,10.94L5.26,9H2V6Z", "repeat": "M17,17H7V14L3,18L7,22V19H19V13H17M7,7H17V10L21,6L17,2V5H5V11H7V7Z", "repeat-once": "M13,15V9H12L10,10V11H11.5V15M17,17H7V14L3,18L7,22V19H19V13H17M7,7H17V10L21,6L17,2V5H5V11H7V7Z", "home": "M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z", "magnify": "M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z", "heart": "M12,21.35L10.55,20.03C5.4,15.36 2,12.27 2,8.5C2,5.41 4.42,3 7.5,3C9.24,3 10.91,3.81 12,5.08C13.09,3.81 14.76,3 16.5,3C19.58,3 22,5.41 22,8.5C22,12.27 18.6,15.36 13.45,20.03L12,21.35Z", "heart-outline": "M12.1,18.55L12,18.65L11.89,18.55C7.14,14.24 4,11.39 4,8.5C4,6.5 5.5,5 7.5,5C9.04,5 10.54,6 11.07,7.36H12.93C13.46,6 14.96,5 16.5,5C18.5,5 20,6.5 20,8.5C20,11.39 16.86,14.24 12.1,18.55M16.5,3C14.76,3 13.09,3.81 12,5.08C10.91,3.81 9.24,3 7.5,3C4.42,3 2,5.41 2,8.5C2,12.27 5.4,15.36 10.55,20.03L12,21.35L13.45,20.03C18.6,15.36 22,12.27 22,8.5C22,5.41 19.58,3 16.5,3Z", "cog": "M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.67 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z", "puzzle": "M20.5,11H19V7C19,5.89 18.1,5 17,5H13V3.5A2.5,2.5 0 0,0 10.5,1A2.5,2.5 0 0,0 8,3.5V5H4A2,2 0 0,0 2,7V10.8H3.5C5,10.8 6.2,12 6.2,13.5C6.2,15 5,16.2 3.5,16.2H2V20A2,2 0 0,0 4,22H7.8V20.5C7.8,19 9,17.8 10.5,17.8C12,17.8 13.2,19 13.2,20.5V22H17A2,2 0 0,0 19,20V16H20.5A2.5,2.5 0 0,0 23,13.5A2.5,2.5 0 0,0 20.5,11Z"};
   function ic(n) { return '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="' + ICONS[n] + '"/></svg>'; }
   function setIcon(node, n) { node.innerHTML = ic(n); }
   (function () { var ns = document.querySelectorAll('[data-ic]'); for (var q = 0; q < ns.length; q++) setIcon(ns[q], ns[q].getAttribute('data-ic')); })();
@@ -138,9 +146,12 @@ svg.i { display: block; fill: currentColor; width: 24px; height: 24px; }
     'Terang': { bg: '#ffffff', bg2: '#f2f2f5', bg3: '#e4e4ea', text: '#111118', sub: '#6a6a78', accent: '#6d28d9' }
   };
 
-  var S = load('settings', { theme: 'Ungu Malam', accent: '', css: '', viz: true, speed: 1, shuffle: false, repeat: false });
+  var DEFAULTS = { theme: 'Ungu Malam', accent: '', css: '', viz: true, speed: 1, shuffle: false, repeat: false, source: 'audius', indexUrl: '' };
+  var S = load('settings', {});
+  Object.keys(DEFAULTS).forEach(function (k) { if (S[k] === undefined) S[k] = DEFAULTS[k]; });
   var liked = load('liked', []);
   var queue = [], qi = -1, tab = 'home', genre = '', lastQuery = '', sleepTimer = null;
+  var curSource = S.source || 'audius';
 
   var audio = new Audio();
   audio.preload = 'auto';
@@ -151,6 +162,12 @@ svg.i { display: block; fill: currentColor; width: 24px; height: 24px; }
   function fmt(s) { s = Math.max(0, Math.floor(s || 0)); return Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2); }
   function artUrl(t) { var a = t && t.artwork; return a ? (a['150x150'] || a['480x480'] || a['1000x1000'] || '') : ''; }
   function isLiked(t) { return liked.some(function (x) { return x.id === t.id; }); }
+  function safeId(s) { return String(s).replace(/[^\w.\-]/g, '').slice(0, 48) || 'plugin'; }
+  var toastT = null;
+  function toast(msg) {
+    var t = $('toast'); t.textContent = String(msg); t.style.display = 'block';
+    clearTimeout(toastT); toastT = setTimeout(function () { t.style.display = 'none'; }, 2800);
+  }
 
   function applyTheme() {
     var t = THEMES[S.theme] || THEMES['Ungu Malam'];
@@ -163,7 +180,31 @@ svg.i { display: block; fill: currentColor; width: 24px; height: 24px; }
     audio.playbackRate = S.speed || 1;
   }
 
-  // ---------- API ----------
+  // ---------- fetch native (tanpa CORS) ----------
+  var fetchCbs = {}, fetchSeq = 0;
+  window.__spicyFetchDone = function (id, status, text) {
+    var cb = fetchCbs[id]; if (!cb) return; delete fetchCbs[id]; cb(status, text);
+  };
+  function nfetch(url, opts) {
+    opts = opts || {};
+    if (window.Android && window.Android.fetch) {
+      return new Promise(function (res, rej) {
+        var id = ++fetchSeq;
+        fetchCbs[id] = function (status, text) {
+          if (status <= 0) return rej(new Error(text || 'Gagal terhubung'));
+          res({
+            ok: status >= 200 && status < 300, status: status,
+            text: function () { return Promise.resolve(text); },
+            json: function () { try { return Promise.resolve(JSON.parse(text)); } catch (e) { return Promise.reject(e); } }
+          });
+        };
+        window.Android.fetch(id, String(url), opts.method || 'GET', JSON.stringify(opts.headers || {}), opts.body || '');
+      });
+    }
+    return fetch(url, opts);
+  }
+
+  // ---------- API Audius ----------
   function apiGet(path, params) {
     params = params || {};
     params.app_name = APP;
@@ -183,15 +224,130 @@ svg.i { display: block; fill: currentColor; width: 24px; height: 24px; }
     return attempt();
   }
 
-  // ---------- player ----------
-  function playQueue(list, index) {
-    queue = list.slice(); qi = index; playCurrent();
+  // ---------- sumber lagu ----------
+  var sources = {};
+  var regs = {};          // id plugin -> [id sumber]
+  var pluginCss = {};     // id plugin -> css
+
+  sources.audius = {
+    id: 'audius', name: 'Audius', builtin: true,
+    trending: function (g) { var p = { time: 'week', limit: 40 }; if (g) p.genre = g; return apiGet('/v1/tracks/trending', p); },
+    search: function (q) { return apiGet('/v1/tracks/search', { query: q, limit: 40 }); },
+    streamUrl: function (t) { return Promise.resolve(base + '/v1/tracks/' + t.id + '/stream?app_name=' + APP); }
+  };
+
+  function normTrack(sid, r) {
+    r = r || {};
+    if (r.id == null) r.id = (r.title || '') + '|' + (r.artist || '');
+    var cover = r.cover || r.artwork || '';
+    if (typeof cover !== 'string') cover = '';
+    return {
+      id: sid + ':' + r.id, rawId: r.id, src: sid, title: String(r.title || '-'),
+      duration: +r.duration || 0, user: { name: String(r.artist || '') },
+      artwork: cover ? { '150x150': cover, '480x480': cover } : null, url: r.url || '', raw: r
+    };
   }
+  function mapTracks(sid, arr) {
+    return (Array.isArray(arr) ? arr : []).filter(Boolean).map(function (r) { return normTrack(sid, r); });
+  }
+
+  function registerSource(pid, def) {
+    if (!def || !def.id || (typeof def.search !== 'function' && typeof def.trending !== 'function')) {
+      throw new Error('registerSource butuh id dan search atau trending');
+    }
+    var sid = String(def.id);
+    if (sid === 'audius') throw new Error('id "audius" dipakai oleh sumber bawaan');
+    sources[sid] = {
+      id: sid, name: def.name || sid, plugin: pid,
+      trending: typeof def.trending === 'function'
+        ? function () { return Promise.resolve(def.trending()).then(function (a) { return mapTracks(sid, a); }); } : null,
+      search: typeof def.search === 'function'
+        ? function (q) { return Promise.resolve(def.search(q)).then(function (a) { return mapTracks(sid, a); }); } : null,
+      streamUrl: function (t) {
+        if (typeof def.streamUrl === 'function') {
+          return Promise.resolve(def.streamUrl({ id: t.rawId, title: t.title, artist: t.user && t.user.name, url: t.url, raw: t.raw }));
+        }
+        return Promise.resolve(t.url);
+      }
+    };
+    (regs[pid] = regs[pid] || []).push(sid);
+  }
+
+  function applyPluginCss() {
+    $('plugin-css').textContent = Object.keys(pluginCss).map(function (k) { return pluginCss[k]; }).join('\n');
+  }
+
+  function unregister(pid) {
+    (regs[pid] || []).forEach(function (sid) { delete sources[sid]; });
+    delete regs[pid]; delete pluginCss[pid];
+    applyPluginCss();
+    if (!sources[curSource]) curSource = 'audius';
+  }
+
+  // ---------- plugin ----------
+  var P = load('plugins', []);
+  function saveP() { save('plugins', P); }
+  function findP(id) { for (var i = 0; i < P.length; i++) if (P[i].id === id) return P[i]; return null; }
+
+  function runPlugin(p) {
+    if (!p.enabled || !p.code) return;
+    var api = {
+      version: 1,
+      registerSource: function (def) { registerSource(p.id, def); },
+      addCss: function (css) { pluginCss[p.id] = (pluginCss[p.id] || '') + '\n' + css; applyPluginCss(); },
+      fetch: nfetch,
+      toast: toast
+    };
+    try { new Function('spicy', p.code)(api); p.error = ''; }
+    catch (e) { p.error = String((e && e.message) || e); unregister(p.id); }
+  }
+
+  function setEnabled(p, on) {
+    unregister(p.id); p.enabled = on; p.error = '';
+    if (on) runPlugin(p);
+    saveP();
+  }
+  function removeP(p) { unregister(p.id); P = P.filter(function (x) { return x !== p; }); saveP(); }
+
+  function installFrom(item) {
+    return nfetch(item.url).then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.text();
+    }).then(function (code) {
+      if (!code || code.length < 5) throw new Error('File plugin kosong');
+      var p = findP(item.id);
+      if (p) { unregister(p.id); } else { p = { id: item.id }; P.push(p); }
+      p.name = item.name || item.id; p.description = item.description || ''; p.version = item.version || '';
+      p.url = item.url; p.code = code; p.enabled = true; p.error = '';
+      runPlugin(p); saveP();
+      return p;
+    });
+  }
+
+  function fetchIndex(url) {
+    return nfetch(url).then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.text();
+    }).then(function (t) {
+      var j; try { j = JSON.parse(t); } catch (e) { throw new Error('Bukan JSON yang valid'); }
+      var arr = Array.isArray(j) ? j : (j.plugins || j.items || []);
+      var out = [];
+      if (Array.isArray(arr)) arr.forEach(function (it) {
+        if (!it || !it.id || !it.url) return;
+        try {
+          out.push({ id: safeId(it.id), name: it.name || String(it.id), description: it.description || '',
+            version: it.version || '', url: new URL(it.url, url).href });
+        } catch (e) {}
+      });
+      if (!out.length) throw new Error('Format indeks tidak dikenali. Butuh daftar "plugins" berisi id, name, url (file .js).');
+      return out;
+    });
+  }
+
+  // ---------- player ----------
+  function playQueue(list, index) { queue = list.slice(); qi = index; playCurrent(); }
   function playCurrent() {
     var t = queue[qi]; if (!t) return;
-    audio.src = base + '/v1/tracks/' + t.id + '/stream?app_name=' + APP;
-    audio.playbackRate = S.speed || 1;
-    audio.play().catch(function () {});
     $('pl-title').textContent = t.title || '-';
     $('pl-artist').textContent = (t.user && t.user.name) || '';
     var u = artUrl(t);
@@ -205,6 +361,15 @@ svg.i { display: block; fill: currentColor; width: 24px; height: 24px; }
       } catch (e) {}
     }
     renderNow();
+    var s = sources[t.src || 'audius'];
+    if (!s) { toast('Sumber lagu ini tidak aktif (plugin dimatikan?)'); return; }
+    s.streamUrl(t).then(function (url) {
+      if (queue[qi] !== t) return;
+      if (!url) throw new Error('URL audio kosong');
+      audio.src = url;
+      audio.playbackRate = S.speed || 1;
+      audio.play().catch(function () {});
+    }).catch(function (e) { toast('Gagal memutar: ' + ((e && e.message) || e)); });
   }
   function next(auto) {
     if (!queue.length) return;
@@ -231,10 +396,16 @@ svg.i { display: block; fill: currentColor; width: 24px; height: 24px; }
     for (var i = 0; i < rows.length; i++) rows[i].classList.toggle('now', !!cur && rows[i].getAttribute('data-id') === cur.id);
   }
 
+  var errRun = 0;
+  audio.addEventListener('playing', function () { errRun = 0; });
   audio.addEventListener('play', function () { document.body.classList.add('playing'); setIcon($('play'), 'pause'); });
   audio.addEventListener('pause', function () { document.body.classList.remove('playing'); setIcon($('play'), 'play'); });
   audio.addEventListener('ended', function () { next(true); });
-  audio.addEventListener('error', function () { if (queue.length > 1) next(false); });
+  audio.addEventListener('error', function () {
+    errRun++;
+    if (queue.length > 1 && errRun < queue.length) next(false);
+    else toast('Lagu ini tidak bisa diputar');
+  });
   audio.addEventListener('timeupdate', function () {
     var d = audio.duration || 0;
     $('cur').textContent = fmt(audio.currentTime);
@@ -263,7 +434,7 @@ svg.i { display: block; fill: currentColor; width: 24px; height: 24px; }
     } catch (e) {}
   }
 
-  // ---------- views ----------
+  // ---------- tampilan ----------
   function trackRow(t, list, idx) {
     var r = el('div', 'row'); r.setAttribute('data-id', t.id);
     var a = el('div', 'art'); var u = artUrl(t); if (u) a.style.backgroundImage = 'url("' + u + '")';
@@ -287,41 +458,61 @@ svg.i { display: block; fill: currentColor; width: 24px; height: 24px; }
     if (!list.length) { container.appendChild(el('div', 'empty', 'Tidak ada hasil.')); return; }
     list.forEach(function (t, i) { container.appendChild(trackRow(t, list, i)); });
   }
+  function sourceChips(onchange) {
+    var chips = el('div', 'chips');
+    Object.keys(sources).forEach(function (id) {
+      var c = el('button', 'chip' + (id === curSource ? ' on' : ''), sources[id].name);
+      c.onclick = function () { curSource = id; S.source = id; save('settings', S); onchange(); };
+      chips.appendChild(c);
+    });
+    return chips;
+  }
 
   var GENRES = ['', 'Electronic', 'Hip-Hop/Rap', 'Pop', 'Rock', 'R&B/Soul', 'Lo-Fi'];
   function viewHome() {
     var m = $('main'); m.innerHTML = '';
+    if (!sources[curSource]) curSource = 'audius';
+    var s = sources[curSource];
     m.appendChild(el('h1', '', 'Lagu Populer'));
-    var chips = el('div', 'chips');
-    GENRES.forEach(function (g) {
-      var c = el('button', 'chip' + (g === genre ? ' on' : ''), g || 'Semua');
-      c.onclick = function () { genre = g; viewHome(); };
-      chips.appendChild(c);
-    });
-    m.appendChild(chips);
-    var box = el('div'); box.appendChild(el('div', 'status', 'Memuat...')); m.appendChild(box);
-    var p = { time: 'week', limit: 40 }; if (genre) p.genre = genre;
-    apiGet('/v1/tracks/trending', p).then(function (list) {
-      if (tab === 'home') renderList(box, list);
+    if (Object.keys(sources).length > 1) m.appendChild(sourceChips(viewHome));
+    if (s.id === 'audius') {
+      var chips = el('div', 'chips');
+      GENRES.forEach(function (g) {
+        var c = el('button', 'chip' + (g === genre ? ' on' : ''), g || 'Semua');
+        c.onclick = function () { genre = g; viewHome(); };
+        chips.appendChild(c);
+      });
+      m.appendChild(chips);
+    }
+    var box = el('div'); m.appendChild(box);
+    if (!s.trending) { box.appendChild(el('div', 'empty', 'Sumber "' + s.name + '" tidak punya daftar populer. Pakai tab Cari.')); return; }
+    box.appendChild(el('div', 'status', 'Memuat...'));
+    var req = s.id === 'audius' ? s.trending(genre) : s.trending();
+    req.then(function (list) {
+      if (tab === 'home' && curSource === s.id) renderList(box, list);
     }).catch(function (e) {
       box.innerHTML = '';
-      box.appendChild(el('div', 'status', 'Gagal memuat: ' + e.message + '. Cek koneksi internet.'));
+      box.appendChild(el('div', 'status', 'Gagal memuat: ' + ((e && e.message) || e) + '. Cek koneksi internet.'));
       var b = el('button', 'btn', 'Coba lagi'); b.onclick = viewHome; box.appendChild(b);
     });
   }
   var searchTimer = null;
   function viewSearch() {
     var m = $('main'); m.innerHTML = '';
-    var inp = el('input', 'search'); inp.type = 'search'; inp.placeholder = 'Cari lagu atau artis'; inp.value = lastQuery;
+    if (!sources[curSource]) curSource = 'audius';
+    var s = sources[curSource];
+    if (Object.keys(sources).length > 1) m.appendChild(sourceChips(viewSearch));
+    var inp = el('input', 'search'); inp.type = 'search'; inp.placeholder = 'Cari lagu atau artis di ' + s.name; inp.value = lastQuery;
     m.appendChild(inp);
     var box = el('div'); m.appendChild(box);
     function run() {
       var q = inp.value.trim(); lastQuery = q;
       if (!q) { box.innerHTML = ''; box.appendChild(el('div', 'empty', 'Ketik untuk mencari.')); return; }
+      if (!s.search) { box.innerHTML = ''; box.appendChild(el('div', 'empty', 'Sumber ini tidak mendukung pencarian.')); return; }
       box.innerHTML = ''; box.appendChild(el('div', 'status', 'Mencari...'));
-      apiGet('/v1/tracks/search', { query: q, limit: 40 }).then(function (list) {
+      s.search(q).then(function (list) {
         if (tab === 'search' && inp.value.trim() === q) renderList(box, list);
-      }).catch(function (e) { box.innerHTML = ''; box.appendChild(el('div', 'status', 'Gagal: ' + e.message)); });
+      }).catch(function (e) { box.innerHTML = ''; box.appendChild(el('div', 'status', 'Gagal: ' + ((e && e.message) || e))); });
     }
     inp.addEventListener('input', function () { clearTimeout(searchTimer); searchTimer = setTimeout(run, 450); });
     run();
@@ -332,6 +523,97 @@ svg.i { display: block; fill: currentColor; width: 24px; height: 24px; }
     var box = el('div'); m.appendChild(box);
     if (!liked.length) box.appendChild(el('div', 'empty', 'Belum ada lagu favorit. Tap ikon hati di daftar lagu.'));
     else renderList(box, liked);
+  }
+
+  // ----- tab plugin -----
+  var indexItems = [], indexMsg = '';
+  var HELP = 'Indeks (JSON):\n{ "plugins": [ { "id": "contoh", "name": "Contoh",\n  "description": "...", "version": "1.0", "url": "contoh.js" } ] }\n'
+    + '(url boleh relatif terhadap lokasi indeks)\n\n'
+    + 'File plugin (.js), variabel "spicy" tersedia:\n'
+    + 'spicy.registerSource({ id, name,\n  search: async (q) => [{ id, title, artist, duration, cover, url }],\n  trending: async () => [...],   // opsional\n  streamUrl: async (t) => "https://..." // opsional, default pakai url\n});\n'
+    + 'spicy.addCss("...");  spicy.fetch(url);  spicy.toast("...");';
+
+  function viewPlugins() {
+    var m = $('main'); m.innerHTML = '';
+    m.appendChild(el('h1', '', 'Plugin'));
+    var warn = el('div', 'card');
+    warn.appendChild(el('small', '', 'Plugin adalah kode JavaScript dari link yang lu masukkan dan berjalan di dalam app. Pasang hanya dari sumber yang lu percaya. Format plugin Bloomee (.bex) tidak kompatibel.'));
+    m.appendChild(warn);
+
+    m.appendChild(el('h2', '', 'Terpasang'));
+    var c1 = el('div', 'card');
+    if (!P.length) c1.appendChild(el('div', 'empty', 'Belum ada plugin.'));
+    P.forEach(function (p) {
+      var box = el('div'); box.style.padding = '6px 0';
+      var head = el('label'); var d = el('div');
+      d.appendChild(document.createTextNode(p.name || p.id));
+      d.appendChild(el('small', '', (p.description || '') + (p.version ? '  v' + p.version : '')));
+      if (p.error) { var er = el('small', '', 'Error: ' + p.error); er.style.color = '#ff6b6b'; d.appendChild(er); }
+      var tg = el('input', 'tg'); tg.type = 'checkbox'; tg.checked = !!p.enabled;
+      tg.onchange = function () { setEnabled(p, tg.checked); viewPlugins(); };
+      head.appendChild(d); head.appendChild(tg); box.appendChild(head);
+      var up = el('button', 'btn alt', 'Update');
+      up.onclick = function () {
+        if (!p.url) return;
+        installFrom({ id: p.id, name: p.name, description: p.description, version: p.version, url: p.url })
+          .then(function () { toast('Diperbarui'); viewPlugins(); })
+          .catch(function (e) { toast('Gagal: ' + e.message); });
+      };
+      var rm = el('button', 'btn alt', 'Hapus');
+      rm.onclick = function () { removeP(p); viewPlugins(); };
+      box.appendChild(up); box.appendChild(rm);
+      c1.appendChild(box);
+    });
+    m.appendChild(c1);
+
+    m.appendChild(el('h2', '', 'Tambah dari indeks (JSON)'));
+    var c2 = el('div', 'card');
+    var inp = el('input', 'search'); inp.type = 'url'; inp.placeholder = 'https://.../index.json'; inp.value = S.indexUrl || '';
+    c2.appendChild(inp);
+    var list = el('div');
+    function renderIdx() {
+      list.innerHTML = '';
+      if (indexMsg) list.appendChild(el('div', 'status', indexMsg));
+      indexItems.forEach(function (it) {
+        var row = el('div', 'row'); var mt = el('div', 'meta');
+        mt.appendChild(el('div', 'tt', it.name + (it.version ? '  v' + it.version : '')));
+        mt.appendChild(el('div', 'ar', it.description || it.url));
+        var b = el('button', 'btn', findP(it.id) ? 'Pasang ulang' : 'Pasang'); b.style.margin = '0';
+        b.onclick = function () {
+          b.textContent = '...';
+          installFrom(it).then(function () { toast('Terpasang: ' + it.name); viewPlugins(); })
+            .catch(function (e) { toast('Gagal: ' + e.message); b.textContent = 'Pasang'; });
+        };
+        row.appendChild(mt); row.appendChild(b); list.appendChild(row);
+      });
+    }
+    var go = el('button', 'btn', 'Muat daftar');
+    go.onclick = function () {
+      var u = inp.value.trim(); if (!u) return;
+      S.indexUrl = u; save('settings', S);
+      indexItems = []; indexMsg = 'Memuat...'; renderIdx();
+      fetchIndex(u).then(function (items) { indexItems = items; indexMsg = ''; renderIdx(); })
+        .catch(function (e) { indexItems = []; indexMsg = 'Gagal: ' + ((e && e.message) || e); renderIdx(); });
+    };
+    c2.appendChild(go); c2.appendChild(list); m.appendChild(c2);
+    renderIdx();
+
+    m.appendChild(el('h2', '', 'Tambah langsung (.js)'));
+    var c3 = el('div', 'card');
+    var inp2 = el('input', 'search'); inp2.type = 'url'; inp2.placeholder = 'https://.../plugin.js';
+    c3.appendChild(inp2);
+    var add = el('button', 'btn', 'Pasang');
+    add.onclick = function () {
+      var u = inp2.value.trim(); if (!u) return;
+      var name = u.split('?')[0].split('/').pop().replace(/\.js$/, '') || 'plugin';
+      installFrom({ id: safeId(name), name: name, url: u })
+        .then(function () { toast('Terpasang: ' + name); viewPlugins(); })
+        .catch(function (e) { toast('Gagal: ' + e.message); });
+    };
+    c3.appendChild(add); m.appendChild(c3);
+
+    m.appendChild(el('h2', '', 'Format plugin'));
+    var c4 = el('div', 'card'); c4.appendChild(el('pre', '', HELP)); m.appendChild(c4);
   }
 
   function toggleRow(label, sub, checked, onchange) {
@@ -387,34 +669,28 @@ svg.i { display: block; fill: currentColor; width: 24px; height: 24px; }
     var ta = el('textarea'); ta.value = S.css || ''; ta.placeholder = ':root { --accent: #ff0080; }\n.row { border-radius: 0; }';
     ta.spellcheck = false; c3.appendChild(ta);
     var ap = el('button', 'btn', 'Terapkan'); ap.onclick = function () { S.css = ta.value; save('settings', S); applyTheme(); };
-    var rs = el('button', 'btn', 'Reset'); rs.style.marginLeft = '8px'; rs.style.background = 'var(--bg3)'; rs.style.color = 'var(--text)';
+    var rs = el('button', 'btn alt', 'Reset');
     rs.onclick = function () { S.css = ''; ta.value = ''; save('settings', S); applyTheme(); };
     c3.appendChild(ap); c3.appendChild(rs); m.appendChild(c3);
 
-    m.appendChild(el('div', 'empty', 'Musik dari Audius. Tanpa login.'));
+    m.appendChild(el('div', 'empty', 'Musik dari Audius dan plugin yang lu pasang. Tanpa login.'));
   }
 
   function show(t) {
     tab = t;
     var bs = document.querySelectorAll('#nav button');
     for (var i = 0; i < bs.length; i++) bs[i].classList.toggle('on', bs[i].getAttribute('data-tab') === t);
-    if (t === 'home') viewHome(); else if (t === 'search') viewSearch(); else if (t === 'lib') viewLib(); else viewSettings();
+    if (t === 'home') viewHome(); else if (t === 'search') viewSearch(); else if (t === 'lib') viewLib();
+    else if (t === 'plug') viewPlugins(); else viewSettings();
   }
   var nb = document.querySelectorAll('#nav button');
   for (var k = 0; k < nb.length; k++) nb[k].onclick = function () { show(this.getAttribute('data-tab')); };
 
   window.spicyBack = function () { if (tab !== 'home') { show('home'); return true; } return false; };
 
-  // Dipanggil dari tombol Tema native (MainActivity)
-  window.spicySetTheme = function (name, css) {
-    if (THEMES[name]) { S.theme = name; S.accent = ''; save('settings', S); }
-    var n = document.getElementById('native-css');
-    if (n) n.textContent = css || '';
-    applyTheme();
-    if (tab === 'set') viewSettings();
-  };
-
-  applyTheme(); syncToggles(); show('home');
+  applyTheme(); syncToggles();
+  P.forEach(runPlugin); saveP();
+  show('home');
 })();
 </script>
 </body>
