@@ -1,0 +1,18 @@
+{
+  "plugins": [
+    {
+      "id": "itunes",
+      "name": "Preview iTunes (30 detik)",
+      "description": "Cari lagu populer lewat Apple iTunes Search API. Hanya preview 30 detik.",
+      "version": "1.0",
+      "url": "itunes-preview.js"
+    },
+    {
+      "id": "neon-css",
+      "name": "Tema Neon",
+      "description": "Contoh plugin CSS: aksen pink neon.",
+      "version": "1.0",
+      "url": "neon-css.js"
+    }
+  ]
+}
